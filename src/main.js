@@ -107,15 +107,15 @@ const buildSuccessor = (role, roleIndex, successorIndex) => {
   const overallReadiness = avg([vedantaAvgGap, functionalAvgGap, behaviouralAvgGap])
 
   const strengths = Object.entries(tagGaps)
-    .filter(([, gap]) => gap != null && gap <= 0.3)
+    .filter(([, gap]) => gap !== null && gap <= 0.3)
     .map(([tag]) => `${tag} capability`)
 
   const developmentAreas = Object.entries(tagGaps)
-    .filter(([, gap]) => gap != null && gap > 0.3 && gap <= 1.5)
+    .filter(([, gap]) => gap !== null && gap > 0.3 && gap <= 1.5)
     .map(([tag]) => `${tag} uplift`)
 
   const criticalGaps = Object.entries(tagGaps)
-    .filter(([, gap]) => gap != null && gap > 1.5)
+    .filter(([, gap]) => gap !== null && gap > 1.5)
     .map(([tag]) => `${tag} critical closure`)
 
   return {
