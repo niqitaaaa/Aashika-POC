@@ -31,10 +31,16 @@ body {
 
 .nav {
   display: block;
+  width: 100%;
+  text-align: left;
   padding: 0.55rem 0.75rem;
   border-radius: 8px;
   color: #dbeafe;
   margin-bottom: 0.35rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.9rem;
 }
 
 .nav.active {
@@ -126,6 +132,10 @@ input[type='range'] {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.86rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
 }
 
 .table th,
@@ -235,6 +245,35 @@ input[type='range'] {
 
 .mini h4 {
   margin-top: 0.35rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+}
+
+.badge.high {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge.medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge.low {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.setting-list {
+  margin: 0;
+  padding-left: 1rem;
+  color: #374151;
+  line-height: 1.6;
 }
 
 @media (max-width: 1200px) {
