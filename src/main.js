@@ -97,7 +97,7 @@ const buildSuccessor = (role, roleIndex, successorIndex) => {
   )
 
   const tagGaps = Object.fromEntries(
-    Object.entries(tagAverages).map(([tag, value]) => [tag, value == null ? null : round(tagTargets[tag] - value)]),
+    Object.entries(tagAverages).map(([tag, value]) => [tag, value === null ? null : round(tagTargets[tag] - value)]),
   )
 
   const vedantaGaps = vedantaCompetencies.map((k) => round(4.6 - vedantaScores[k]))
