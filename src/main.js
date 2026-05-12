@@ -452,13 +452,13 @@ const analyticsPage = () => {
   `
 }
 
-const riskTier = (risk) => (risk >= 0.7 ? 'High' : risk >= 0.5 ? 'Medium' : 'Low')
+const getRiskTierLabel = (risk) => (risk >= 0.7 ? 'High' : risk >= 0.5 ? 'Medium' : 'Low')
 
 const riskPage = () => {
   const roleSet = filteredRoles().slice().sort((a, b) => b.riskScore - a.riskScore)
   const tierCounts = roleSet.reduce(
     (acc, role) => {
-      acc[riskTier(role.riskScore)] += 1
+      acc[getRiskTierLabel(role.riskScore)] += 1
       return acc
     },
     { High: 0, Medium: 0, Low: 0 },
@@ -481,7 +481,7 @@ const riskPage = () => {
         <tbody>
           ${roleSet
             .map((r) => {
-              const tier = riskTier(r.riskScore)
+              const tier = getRiskTierLabel(r.riskScore)
               const action =
                 tier === 'High'
                   ? 'Accelerate readiness and add external backup'
