@@ -69,6 +69,15 @@ const readinessCategory = (gap) => {
 const timeToReady = (gap) => (gap <= 0.3 ? 0 : gap <= 0.8 ? 6 : gap <= 1.5 ? 18 : 36)
 const readinessPercent = (gap) => round((1 - gap / 5) * 100)
 const riskTier = (risk) => (risk >= 0.7 ? 'High' : risk >= 0.5 ? 'Medium' : 'Low')
+const TIMELINE_MONTH_MAX = 60
+const SCENARIO_CUSTOM_BONUS = 0.3
+const SCENARIO_DEFAULT_BONUS = 0.15
+const esc = (value) =>
+  String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
 
 const buildSkills = (roleIndex, successorIndex) => {
   const tags = Object.keys(tagTargets)
@@ -98,7 +107,11 @@ const buildSkills = (roleIndex, successorIndex) => {
 const buildSuccessor = (role, roleIndex, successorIndex) => {
   const skills = buildSkills(roleIndex, successorIndex)
   const competencyScores = Object.fromEntries(
-    vedantaCompetencies.map((name, idx) => [name, round(Math.max(1, Math.min(5, 2.8 + pseudo(roleIndex * 61 + successorIndex * 23 + idx * 7) * 2)))]),
+    vedantaCompetencies.map((name, idx) => {
+      const seed = roleIndex * 61 + successorIndex * 23 + idx * 7
+      const score = round(Math.max(1, Math.min(5, 2.8 + pseudo(seed) * 2)))
+      return [name, score]
+    }),
   )
 
   const tagAverages = Object.fromEntries(
@@ -272,11 +285,11 @@ const roleHeatmap = (rows) => `
         ${rows
           .map(
             (role) => `<tr>
-            <td>${role.title}</td>
+            <td>${esc(role.title)}</td>
             ${role.successors
               .map(
                 (s) => `<td class="heat ${s.category.toLowerCase().replace(/\s+/g, '-')}">
-                  <button class="cell-btn" data-role="${role.id}" data-successor="${s.id}" title="${s.label}: gap ${s.overallGap} (${s.category})">${s.overallGap}</button>
+                  <button class="cell-btn" data-role="${esc(role.id)}" data-successor="${esc(s.id)}" title="${esc(s.label)}: gap ${esc(s.overallGap)} (${esc(s.category)})">${esc(s.overallGap)}</button>
                 </td>`,
               )
               .join('')}
@@ -333,8 +346,8 @@ const roleQuickCards = (rows) =>
   `<div class="role-grid">${rows
     .map(
       (r) => `<button class="card role-quick" data-role="${r.id}">
-        <h4>${r.title}</h4>
-        <p>${r.functionArea}</p>
+        <h4>${esc(r.title)}</h4>
+        <p>${esc(r.functionArea)}</p>
         <p><strong>Risk:</strong> ${r.riskScore} (${r.riskTier})</p>
         <p><strong>Best Gap:</strong> ${r.bestGap}</p>
       </button>`,
@@ -381,12 +394,12 @@ const dashboardPage = () => {
         .map(
           (k) => `<article class="card kpi" tabindex="0">
             <p class="kpi-value">${k.value}</p>
-            <p>${k.label}</p>
+            <p>${esc(k.label)}</p>
             <span class="trend">${k.trend}</span>
             <div class="kpi-hover">
-              <p><strong>Definition:</strong> ${k.definition}</p>
-              <p><strong>Calculation:</strong> ${k.calculation}</p>
-              <p><strong>Why it matters:</strong> ${k.why}</p>
+              <p><strong>Definition:</strong> ${esc(k.definition)}</p>
+              <p><strong>Calculation:</strong> ${esc(k.calculation)}</p>
+              <p><strong>Why it matters:</strong> ${esc(k.why)}</p>
               <p><strong>Trend:</strong> ${k.trend}</p>
             </div>
           </article>`,
@@ -503,7 +516,7 @@ const successorProfilePage = () => {
     <section class="card">
       <h3>Successor Profile (Deep-Dive)</h3>
       <div class="chip-row">
-        ${role.successors.map((s) => `<button class="chip ${s.id === successor.id ? 'chip-active' : ''}" data-successor="${s.id}">${s.label}</button>`).join('')}
+        ${role.successors.map((s) => `<button class="chip ${s.id === successor.id ? 'chip-active' : ''}" data-successor="${esc(s.id)}">${esc(s.label)}</button>`).join('')}
       </div>
       <p class="muted"><strong>${role.title}</strong> · ${successor.label} · ${successor.category} · ${successor.readinessPct}% readiness · ${successor.monthsToReady} months to ready</p>
     </section>
@@ -655,7 +668,12 @@ const scenarioPlanningPage = () => {
   const role = selectedRole()
   const projected = role.successors
     .map((s) => {
-      const uplift = round(Math.min(1.5, state.timelineMonths / 60 + (state.scenarioType === 'Custom What-If' ? 0.3 : 0.15)))
+      const uplift = round(
+        Math.min(
+          1.5,
+          state.timelineMonths / TIMELINE_MONTH_MAX + (state.scenarioType === 'Custom What-If' ? SCENARIO_CUSTOM_BONUS : SCENARIO_DEFAULT_BONUS),
+        ),
+      )
       const projectedGap = round(Math.max(0, s.overallGap - uplift))
       return {
         label: s.label,
@@ -683,7 +701,7 @@ const scenarioPlanningPage = () => {
           </select>
         </label>
         <label>Timeline: <strong>${state.timelineMonths} months</strong></label>
-        <input id="timeline" type="range" min="0" max="60" step="6" value="${state.timelineMonths}" />
+        <input id="timeline" type="range" min="0" max="${TIMELINE_MONTH_MAX}" step="6" value="${state.timelineMonths}" />
       </div>
     </section>
 
@@ -900,12 +918,14 @@ const ensureState = () => {
   }
   const role = selectedRole()
   if (!role.successors.some((s) => s.id === state.successorId)) {
-    state.successorId = role.successors[0].id
+    state.successorId = role.successors[0]?.id ?? state.successorId
   }
 }
 
 const render = () => {
   ensureState()
+  const currentPage = navItems.includes(state.page) ? state.page : navItems[0]
+  state.page = currentPage
 
   document.querySelector('#app').innerHTML = `
     <div class="layout">
@@ -913,7 +933,7 @@ const render = () => {
         <h1>BALCO Succession Intelligence</h1>
         <nav>
           ${navItems
-            .map((item) => `<button class="nav ${state.page === item ? 'active' : ''}" data-page="${item}">${item}</button>`)
+            .map((item) => `<button class="nav ${currentPage === item ? 'active' : ''}" data-page="${esc(item)}">${esc(item)}</button>`)
             .join('')}
         </nav>
       </aside>
@@ -921,8 +941,8 @@ const render = () => {
       <main>
         <header class="topbar card">
           <div>
-            <h2>${state.page}</h2>
-            <p class="muted">${pageSubtitle[state.page]}</p>
+            <h2>${esc(currentPage)}</h2>
+            <p class="muted">${esc(pageSubtitle[currentPage])}</p>
           </div>
           <div>
             <p class="muted">Function Filter (multi-select)</p>
@@ -930,21 +950,23 @@ const render = () => {
           </div>
         </header>
 
-        ${(pageMap[state.page] ?? dashboardPage)()}
+        ${(pageMap[currentPage] ?? dashboardPage)()}
       </main>
     </div>
   `
 
   document.querySelectorAll('[data-page]').forEach((button) => {
     button.addEventListener('click', () => {
-      state.page = button.getAttribute('data-page')
+      const nextPage = button.getAttribute('data-page')
+      if (nextPage && navItems.includes(nextPage)) state.page = nextPage
       render()
     })
   })
 
   document.querySelectorAll('[data-role]').forEach((button) => {
     button.addEventListener('click', () => {
-      state.roleId = button.getAttribute('data-role')
+      const nextRoleId = button.getAttribute('data-role')
+      if (nextRoleId && roleById[nextRoleId]) state.roleId = nextRoleId
       const successor = selectedRole().successors[0]
       state.successorId = successor?.id
       render()
@@ -953,7 +975,8 @@ const render = () => {
 
   document.querySelectorAll('[data-successor]').forEach((button) => {
     button.addEventListener('click', () => {
-      state.successorId = button.getAttribute('data-successor')
+      const successorId = button.getAttribute('data-successor')
+      if (successorId && selectedRole().successors.some((s) => s.id === successorId)) state.successorId = successorId
       render()
     })
   })
@@ -961,6 +984,7 @@ const render = () => {
   document.querySelectorAll('[data-function]').forEach((button) => {
     button.addEventListener('click', () => {
       const value = button.getAttribute('data-function')
+      if (!value || !functions.includes(value)) return
       if (state.selectedFunctions.includes(value)) {
         state.selectedFunctions = state.selectedFunctions.filter((f) => f !== value)
       } else {
@@ -985,13 +1009,14 @@ const render = () => {
   })
 
   document.querySelector('#roleSelect')?.addEventListener('change', (event) => {
-    state.roleId = event.target.value
-    state.successorId = selectedRole().successors[0].id
+    if (roleById[event.target.value]) state.roleId = event.target.value
+    state.successorId = selectedRole().successors[0]?.id ?? state.successorId
     render()
   })
 
   document.querySelector('#scenarioType')?.addEventListener('change', (event) => {
-    state.scenarioType = event.target.value
+    const options = ['Single Role Transition', 'Multi-Role Cascade', 'Function-Wide Disruption', 'Custom What-If']
+    if (options.includes(event.target.value)) state.scenarioType = event.target.value
     render()
   })
 }
